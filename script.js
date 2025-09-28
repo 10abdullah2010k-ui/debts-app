@@ -1,6 +1,9 @@
 // script.js
 
-document.addEventListener('DOMContentLoaded', () => {
+// -->> هذا هو السطر المهم الذي يجب تغييره <<--
+const apiUrl = 'https://my-debts-app.vercel.app/api/debts';
+
+document.addEventListener('DOMContentLoaded', ( ) => {
     const addDebtBtn = document.getElementById('add-debt-btn');
     const debtFormContainer = document.getElementById('debt-form-container');
     const debtForm = document.getElementById('debt-form');
@@ -24,107 +27,103 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const newDebt = {
-            name: document.getElementById('creditorName').value,
+            creditorName: document.getElementById('creditorName').value,
             amount: parseFloat(document.getElementById('amount').value),
-            type: document.getElementById('type').value,
             dueDate: document.getElementById('dueDate').value,
-            notes: document.getElementById('notes').value,
+            description: document.getElementById('description').value,
             isPaid: document.getElementById('isPaid').checked,
+            debtType: document.querySelector('input[name="debtType"]:checked').value
         };
 
         try {
-            const response = await fetch('http://localhost:3000/api/debts', {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newDebt ),
+                body: JSON.stringify(newDebt),
             });
 
             if (!response.ok) {
-                throw new Error('فشل في حفظ الدين');
+                throw new Error('حدث خطأ أثناء إضافة الدين');
             }
 
-            // إعادة تحميل قائمة الديون وتحديثها
-            fetchDebts();
-
-            // إخفاء النموذج وإعادة تعيينه
+            const addedDebt = await response.json();
+            addDebtToTable(addedDebt); // إضافة الدين الجديد إلى الجدول
+            debtForm.reset();
             debtFormContainer.style.display = 'none';
             addDebtBtn.style.display = 'block';
-            debtForm.reset();
 
         } catch (error) {
-            console.error('خطأ:', error);
-            alert('حدث خطأ أثناء حفظ الدين.');
+            console.error('Error:', error);
+            alert('فشل في إضافة الدين. الرجاء المحاولة مرة أخرى.');
         }
     });
 
     // جلب وعرض الديون عند تحميل الصفحة
-    fetchDebts();
-});
-
-// دالة لجلب الديون من الخادم
-async function fetchDebts() {
-    try {
-        const response = await fetch('http://localhost:3000/api/debts' );
-        if (!response.ok) {
-            throw new Error('فشل جلب البيانات');
+    async function fetchAndDisplayDebts() {
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error('فشل في جلب البيانات');
+            }
+            const debts = await response.json();
+            const debtsTableBody = document.getElementById('debts-table-body');
+            debtsTableBody.innerHTML = ''; // مسح الجدول قبل إضافة البيانات الجديدة
+            debts.forEach(addDebtToTable);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('فشل في تحميل قائمة الديون.');
         }
-        const debts = await response.json();
-        displayDebts(debts);
-    } catch (error) {
-        console.error('خطأ:', error);
     }
-}
 
-// --- دالة عرض الديون المحدثة (مع زر الحذف) ---
-function displayDebts(debts) {
-    const debtList = document.getElementById('debt-list');
-    debtList.innerHTML = '';
-    debts.forEach(debt => {
-        const debtItem = document.createElement('div');
-        debtItem.className = 'debt-item';
-        // تغيير لون الشريط الجانبي بناءً على نوع الدين
-        debtItem.style.borderLeftColor = debt.type === 'on-me' ? '#dc3545' : '#28a745';
+    // دالة لإضافة صف دين إلى الجدول
+    function addDebtToTable(debt) {
+        const debtsTableBody = document.getElementById('debts-table-body');
+        const row = document.createElement('tr');
 
-        debtItem.innerHTML = `
-            <div class="debt-details">
-                <strong>${debt.name}</strong>
-                <span>المبلغ: ${debt.amount} ريال</span>
-                <span>تاريخ الاستحقاق: ${new Date(debt.dueDate).toLocaleDateString('ar-SA')}</span>
-            </div>
-            <div class="debt-actions">
+        // تحديد لون الصف بناءً على نوع الدين
+        row.classList.add(debt.debtType === 'payable' ? 'payable' : 'receivable');
+
+        row.innerHTML = `
+            <td>${debt.creditorName}</td>
+            <td>${debt.amount}</td>
+            <td>${new Date(debt.dueDate).toLocaleDateString()}</td>
+            <td>${debt.description}</td>
+            <td>${debt.isPaid ? 'نعم' : 'لا'}</td>
+            <td>
                 <button class="delete-btn" data-id="${debt._id}">حذف</button>
-            </div>
+            </td>
         `;
-        debtList.appendChild(debtItem);
-    });
-}
+        debtsTableBody.appendChild(row);
+    }
 
-// --- كود جديد: الاستماع للنقرات على قائمة الديون (لحذف دين) ---
-document.getElementById('debt-list').addEventListener('click', async (e) => {
-    // التأكد من أن المستخدم ضغط على زر الحذف
-    if (e.target.classList.contains('delete-btn')) {
-        const debtId = e.target.dataset.id; // الحصول على ID الدين من الزر
-        
-        if (confirm('هل أنت متأكد من أنك تريد حذف هذا الدين؟')) {
-            try {
-                const response = await fetch(`http://localhost:3000/api/debts/${debtId}`, {
-                    method: 'DELETE',
-                } );
+    // التعامل مع حذف الدين
+    document.getElementById('debts-table-body').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const debtId = e.target.dataset.id;
+            
+            if (confirm('هل أنت متأكد من أنك تريد حذف هذا الدين؟')) {
+                try {
+                    const response = await fetch(`${apiUrl}/${debtId}`, {
+                        method: 'DELETE',
+                    });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'فشل حذف الدين من الخادم');
+                    if (!response.ok) {
+                        throw new Error('فشل في حذف الدين');
+                    }
+
+                    // إزالة الصف من الجدول في الواجهة
+                    e.target.closest('tr').remove();
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('فشل في حذف الدين. الرجاء المحاولة مرة أخرى.');
                 }
-
-                // إعادة تحميل قائمة الديون من الخادم لعرضها محدثة
-                fetchDebts(); 
-                
-            } catch (error) {
-                console.error('خطأ:', error);
-                alert(`حدث خطأ أثناء محاولة حذف الدين: ${error.message}`);
             }
         }
-    }
+    });
+
+    // استدعاء الدالة لجلب البيانات عند تحميل الصفحة
+    fetchAndDisplayDebts();
 });
