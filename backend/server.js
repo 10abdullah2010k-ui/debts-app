@@ -23,13 +23,13 @@ async function connectDB() {
         console.log("تم الاتصال بنجاح بقاعدة بيانات MongoDB");
     } catch (err) {
         console.error("فشل الاتصال بقاعدة البيانات:", err);
-        process.exit(1); // إنهاء العملية إذا فشل الاتصال
+        process.exit(1);
     }
 }
 
-// 4. نقاط النهاية (API Endpoints)
+// 4. نقاط نهاية الديون (Debts API) - (سيتم تأمينها لاحقاً)
 
-// جلب كل الديون
+// جلب كل الديون (مؤقتاً، سيتم التعديل)
 app.get('/api/debts', async (req, res) => {
     try {
         const debts = await db.collection('debts').find({}).toArray();
@@ -39,19 +39,18 @@ app.get('/api/debts', async (req, res) => {
     }
 });
 
-// إضافة دين جديد
+// إضافة دين جديد (مؤقتاً، سيتم التعديل)
 app.post('/api/debts', async (req, res) => {
     try {
         const newDebt = req.body;
         const result = await db.collection('debts').insertOne(newDebt);
-        // نرسل المستند الذي تم إدراجه بالكامل للواجهة الأمامية
         res.status(201).json(result.ops[0]);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-// حذف دين
+// حذف دين (مؤقتاً، سيتم التعديل)
 app.delete('/api/debts/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -66,8 +65,59 @@ app.delete('/api/debts/:id', async (req, res) => {
     }
 });
 
+// 6. نقاط نهاية المصادقة (Authentication)
 
-// 5. تشغيل الخادم والاتصال بقاعدة البيانات
+// إنشاء حساب جديد
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // التحقق مما إذا كان البريد الإلكتروني موجوداً بالفعل
+        const existingUser = await db.collection('users').findOne({ email: email });
+        if (existingUser) {
+            return res.status(400).json({ message: "هذا البريد الإلكتروني مستخدم بالفعل." });
+        }
+
+        // حفظ المستخدم الجديد (كلمة المرور كنص عادي بناءً على طلبك)
+        const result = await db.collection('users').insertOne({ email, password });
+        
+        // إرسال المستخدم الجديد كاستجابة (بدون كلمة المرور)
+        res.status(201).json({
+            _id: result.insertedId,
+            email: email
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// تسجيل الدخول
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // البحث عن المستخدم عن طريق البريد الإلكتروني
+        const user = await db.collection('users').findOne({ email: email });
+
+        // التحقق مما إذا كان المستخدم موجوداً وكلمة المرور متطابقة
+        if (!user || user.password !== password) {
+            return res.status(401).json({ message: "البريد الإلكتروني أو كلمة المرور غير صحيحة." });
+        }
+        
+        // إرسال بيانات المستخدم كاستجابة (بدون كلمة المرور)
+        res.status(200).json({
+            _id: user._id,
+            email: user.email
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+
+// 7. تشغيل الخادم والاتصال بقاعدة البيانات
 connectDB().then(() => {
     app.listen(port, '0.0.0.0', () => {
         console.log(`الخادم يعمل على المنفذ ${port}`);
