@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل الديون</title>
+    
+    <!-- هذا هو السطر الأهم الذي كان مفقوداً -->
+    <link rel="stylesheet" href="style.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <h1>نظام تسجيل الديون</h1>
+
+        <!-- زر إضافة دين جديد -->
+        <button id="add-debt-btn">إضافة دين جديد</button>
+
+        <!-- حاوية نموذج الإضافة (مخفية بشكل افتراضي ) -->
+        <div id="debt-form-container" style="display: none;">
+            <h2>إضافة دين جديد</h2>
+            <form id="debt-form">
+                <div class="form-group">
+                    <label for="creditorName">اسم الشخص (الدائن/المدين)</label>
+                    <input type="text" id="creditorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">المبلغ</label>
+                    <input type="number" id="amount" required>
+                </div>
+                <div class="form-group">
+                    <label for="type">نوع المعاملة</label>
+                    <select id="type" required>
+                        <option value="on-me">دين علي (مستحق مني)</option>
+                        <option value="for-me">دين لي (مستحق لي)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dueDate">تاريخ الاستحقاق</label>
+                    <input type="date" id="dueDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="notes">ملاحظات</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label for="isPaid">هل تم سداد الدين؟</label>
+                    <input type="checkbox" id="isPaid">
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" id="save-debt-btn">حفظ الدين</button>
+                    <button type="button" id="cancel-btn">إلغاء</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- قسم عرض الديون الحالية -->
+        <div id="debts-section">
+            <h2>قائمة الديون</h2>
+            <div id="debt-list">
+                <!-- الديون ستظهر هنا بواسطة الجافاسكريبت -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
